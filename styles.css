@@ -68,7 +68,7 @@ img { max-width: 100%; display: block; }
   box-shadow: var(--shadow);
 }
 .brand__name {
-  font-weight: 1000;
+  font-weight: 3000;
   letter-spacing: -0.05em;
 }
 .nav {
