@@ -28,6 +28,7 @@
           <a href="#features">Features</a>
           <a href="#screens">App preview</a>
           <a href="#faq">FAQ</a>
+          <a href="/start/">Try SMS</a>
         </nav>
         <a class="button button--outline" href="#waitlist">Get updates</a>
       </header>
@@ -249,8 +250,12 @@
                 Get updates, early access news, and launch announcements for the app built around mutual connection.
               </p>
             </div>
-            <form class="waitlist-form" onsubmit="event.preventDefault(); showThanks();">
-              <input type="email" placeholder="Your email address" aria-label="Email address" required />
+            <form class="waitlist-form" id="waitlist-form">
+              <input id="waitlist-email" type="email" placeholder="Your email address" aria-label="Email address" autocomplete="email" required />
+              <label class="compact-consent">
+                <input id="waitlist-consent" type="checkbox" required />
+                <span>I agree to receive Mutual Spark product and launch emails. I can unsubscribe at any time.</span>
+              </label>
               <button type="submit" class="button button--primary">Notify me</button>
             </form>
             <p class="form-note" id="form-note">No spam. Just launch news and meaningful updates.</p>
@@ -268,17 +273,41 @@
         </div>
         <div class="footer__links">
           <a href="mailto:hello@mutualsparks.com">hello@mutualsparks.com</a>
-          <a href="#">Privacy Policy</a>
-          <a href="#">Terms</a>
+          <a href="/privacy/">Privacy Policy</a>
+          <a href="/terms/">Terms</a>
         </div>
       </footer>
     </div>
 
     <script>
-      function showThanks() {
+      const API_BASE = 'https://sms-staging.mutualsparks.com';
+      document.getElementById('waitlist-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
         const note = document.getElementById('form-note');
-        note.textContent = 'Thank you — your interest has been captured for early access updates.';
-      }
+        const button = form.querySelector('button');
+        note.textContent = 'Saving your subscription…';
+        button.disabled = true;
+        try {
+          const response = await fetch(`${API_BASE}/public/waitlist`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: document.getElementById('waitlist-email').value,
+              email_consent: document.getElementById('waitlist-consent').checked,
+              source_url: window.location.href
+            })
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || 'Unable to subscribe.');
+          note.textContent = result.message;
+          form.reset();
+        } catch (error) {
+          note.textContent = `${error.message} Please try again or email hello@mutualsparks.com.`;
+        } finally {
+          button.disabled = false;
+        }
+      });
     </script>
   </body>
 </html>

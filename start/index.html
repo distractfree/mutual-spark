@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Start with SMS — Mutual Spark</title>
+    <meta name="description" content="Start a private Mutual Spark connection request by SMS." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="topbar">
+        <a href="/" class="brand"><img src="/assets/logo.jpeg" alt="Mutual Spark logo" class="brand__logo" /><span class="brand__name">Mutual Spark</span></a>
+        <nav class="nav nav--legal"><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></nav>
+      </header>
+      <main class="legal-shell start-shell">
+        <section class="start-card">
+          <span class="eyebrow">SMS early access</span>
+          <h1>Express your interest privately.</h1>
+          <p class="start-lede">Register and verify your mobile number, then start a private Ask Out request by text. Your interest is revealed only if the other person independently submits a matching request.</p>
+          <div class="start-steps" aria-label="How SMS early access works">
+            <div><strong>1</strong><span>Text the campaign code.</span></div>
+            <div><strong>2</strong><span>Enter the other person’s phone number.</span></div>
+            <div><strong>3</strong><span>Reply YES to submit privately.</span></div>
+          </div>
+          <form id="registration-form" class="registration-form">
+            <div class="field-grid">
+              <label><span>First name</span><input id="first-name" autocomplete="given-name" maxlength="50" required /></label>
+              <label><span>Last name</span><input id="last-name" autocomplete="family-name" maxlength="50" required /></label>
+              <label><span>Email</span><input id="registration-email" type="email" autocomplete="email" required /></label>
+              <label><span>Mobile number</span><input id="phone-number" type="tel" autocomplete="tel" placeholder="(404) 555-1212" required /></label>
+            </div>
+            <div class="consent-box">
+              <label class="consent-label"><input type="checkbox" id="age-attested" required /><span>I confirm that I am at least 18 years old.</span></label>
+              <label class="consent-label"><input type="checkbox" id="sms-consent" required /><span>I agree to receive transactional text messages from Mutual Spark, operated by FMF Consulting LLC, about my connection requests and matches. Message frequency varies. Message and data rates may apply. Reply STOP to opt out or HELP for help. Consent is not a condition of purchase.</span></label>
+              <label class="consent-label"><input type="checkbox" id="email-updates" /><span>Optional: send me Mutual Spark product and launch updates by email. I can unsubscribe at any time.</span></label>
+            </div>
+            <button class="button button--primary" type="submit">Send verification code</button>
+          </form>
+          <form id="otp-form" class="registration-form is-hidden">
+            <label class="single-field"><span>Verification code</span><input id="otp-code" inputmode="numeric" autocomplete="one-time-code" required /></label>
+            <button class="button button--primary" type="submit">Verify my phone</button>
+            <button class="button button--ghost" type="button" id="edit-registration">Change my information</button>
+          </form>
+          <div id="registration-complete" class="is-hidden">
+            <p class="success-message">Your phone is verified. You’re ready to start.</p>
+            <a class="button button--primary start-button" id="start-sms" href="#">Open Messages</a>
+            <div class="sms-fallback" aria-labelledby="sms-fallback-title">
+              <strong id="sms-fallback-title">If Messages does not open</strong>
+              <p>Open your messaging app and text <strong id="fallback-code">CR</strong> to <strong>(218) 419-4609</strong>.</p>
+              <div class="sms-fallback__actions">
+                <button class="button button--ghost button--small" type="button" id="copy-sms-number">Copy number</button>
+                <button class="button button--ghost button--small" type="button" id="copy-sms-code">Copy code</button>
+              </div>
+              <p class="copy-status" id="copy-status" aria-live="polite"></p>
+            </div>
+          </div>
+          <p class="form-note" id="registration-note">We’ll send one verification code to confirm your number. We do not message an unregistered target during this demonstration.</p>
+          <p class="legal-links">By continuing, you acknowledge our <a href="/terms/">Terms and SMS Terms</a> and <a href="/privacy/">Privacy Policy</a>.</p>
+        </section>
+      </main>
+      <footer class="footer footer--legal">
+        <div class="footer__brand"><img src="/assets/logo.jpeg" alt="Mutual Spark logo" class="footer__logo" /><div><strong>Mutual Spark</strong><span>Private attraction. Revealed only when it’s mutual.</span></div></div>
+        <div class="footer__links"><a href="/">Home</a><a href="mailto:hello@mutualsparks.com">Contact</a></div>
+      </footer>
+    </div>
+    <script>
+      const allowedCodes = new Set(["CR", "CRIG", "CRTIKTOK", "CRGT"]);
+      const requestedCode = new URLSearchParams(window.location.search).get("code");
+      const campaignCode = allowedCodes.has((requestedCode || "").toUpperCase()) ? requestedCode.toUpperCase() : "CR";
+      const API_BASE = "https://sms-staging.mutualsparks.com";
+      const registrationForm = document.getElementById("registration-form");
+      const otpForm = document.getElementById("otp-form");
+      const completePanel = document.getElementById("registration-complete");
+      const note = document.getElementById("registration-note");
+      const startButton = document.getElementById("start-sms");
+      let submittedPhone = "";
+      startButton.href = `sms:+12184194609?&body=${encodeURIComponent(campaignCode)}`;
+      document.getElementById("fallback-code").textContent = campaignCode;
+
+      async function copyFallback(value, label) {
+        const status = document.getElementById("copy-status");
+        try {
+          await navigator.clipboard.writeText(value);
+          status.textContent = `${label} copied.`;
+        } catch (error) {
+          status.textContent = `Copy unavailable. Select and copy ${value}.`;
+        }
+      }
+
+      document.getElementById("copy-sms-number").addEventListener("click", () => copyFallback("+12184194609", "Number"));
+      document.getElementById("copy-sms-code").addEventListener("click", () => copyFallback(campaignCode, "Code"));
+
+      registrationForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const button = registrationForm.querySelector("button[type='submit']");
+        submittedPhone = document.getElementById("phone-number").value;
+        note.textContent = "Sending your verification code…";
+        button.disabled = true;
+        try {
+          const response = await fetch(`${API_BASE}/public/registration/start`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              first_name: document.getElementById("first-name").value,
+              last_name: document.getElementById("last-name").value,
+              email: document.getElementById("registration-email").value,
+              phone_number: submittedPhone,
+              campaign_code: campaignCode,
+              age_attested: document.getElementById("age-attested").checked,
+              sms_consent: document.getElementById("sms-consent").checked,
+              email_updates_opt_in: document.getElementById("email-updates").checked,
+              source_url: window.location.href
+            })
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || "Unable to send a code.");
+          registrationForm.classList.add("is-hidden");
+          otpForm.classList.remove("is-hidden");
+          document.getElementById("otp-code").focus();
+          note.textContent = "Enter the verification code sent to your mobile number.";
+        } catch (error) {
+          note.textContent = `${error.message} Please try again.`;
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      otpForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const button = otpForm.querySelector("button[type='submit']");
+        note.textContent = "Verifying your phone…";
+        button.disabled = true;
+        try {
+          const response = await fetch(`${API_BASE}/public/registration/verify`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone_number: submittedPhone, otp: document.getElementById("otp-code").value })
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || "Unable to verify your phone.");
+          otpForm.classList.add("is-hidden");
+          completePanel.classList.remove("is-hidden");
+          note.textContent = result.message;
+        } catch (error) {
+          note.textContent = `${error.message} Please try again.`;
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      document.getElementById("edit-registration").addEventListener("click", () => {
+        otpForm.classList.add("is-hidden");
+        registrationForm.classList.remove("is-hidden");
+        note.textContent = "Update your information and request a new code.";
+      });
+    </script>
+  </body>
+</html>
