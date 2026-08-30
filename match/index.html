@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Your private match — Mutual Spark</title>
+    <meta name="description" content="Open a private Mutual Spark match." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="topbar">
+        <a href="/" class="brand"><img src="/assets/logo.jpeg" alt="Mutual Spark logo" class="brand__logo" /><span class="brand__name">Mutual Spark</span></a>
+        <nav class="nav nav--legal"><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></nav>
+      </header>
+      <main class="legal-shell match-shell">
+        <section class="start-card match-card" aria-live="polite">
+          <span class="eyebrow">Private match</span>
+          <div id="match-loading">
+            <h1>Opening your update…</h1>
+            <p class="start-lede">We’re securely checking this private match link.</p>
+          </div>
+          <div id="match-success" class="is-hidden">
+            <div class="match-spark" aria-hidden="true">♥</div>
+            <h1>It’s mutual.</h1>
+            <p class="start-lede">You and <strong id="matched-first-name"></strong> independently expressed interest in one another.</p>
+            <div class="match-contact">
+              <span>Connect by text</span>
+              <strong id="matched-phone"></strong>
+            </div>
+            <a class="button button--primary" id="message-match" href="#">Open Messages</a>
+            <p class="form-note match-note">Be thoughtful and respectful. Either person can decide whether or when to continue the conversation.</p>
+          </div>
+          <div id="match-error" class="is-hidden">
+            <h1>We couldn’t open this update.</h1>
+            <p class="start-lede" id="match-error-message">This private link may be invalid or expired.</p>
+            <a class="button button--ghost" href="mailto:hello@mutualsparks.com">Contact support</a>
+          </div>
+        </section>
+      </main>
+      <footer class="footer footer--legal">
+        <div class="footer__brand"><img src="/assets/logo.jpeg" alt="Mutual Spark logo" class="footer__logo" /><div><strong>Mutual Spark</strong><span>Private attraction. Revealed only when it’s mutual.</span></div></div>
+        <div class="footer__links"><a href="/">Home</a><a href="mailto:hello@mutualsparks.com">Contact</a></div>
+      </footer>
+    </div>
+    <script>
+      const API_BASE = "https://sms-staging.mutualsparks.com";
+      const token = window.location.hash.replace(/^#/, "").trim();
+      const loading = document.getElementById("match-loading");
+      const success = document.getElementById("match-success");
+      const errorPanel = document.getElementById("match-error");
+      const errorMessage = document.getElementById("match-error-message");
+
+      function formatUsPhone(phone) {
+        const digits = String(phone || "").replace(/\D/g, "");
+        const local = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+        return /^\d{10}$/.test(local)
+          ? `(${local.slice(0, 3)}) ${local.slice(3, 6)}-${local.slice(6)}`
+          : phone;
+      }
+
+      async function openMatch() {
+        if (!token) throw new Error("This private match link is incomplete.");
+        history.replaceState(null, "", window.location.pathname);
+        const response = await fetch(`${API_BASE}/public/match/access`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || result.message || "Unable to open this private match.");
+
+        document.getElementById("matched-first-name").textContent = result.matched_first_name;
+        document.getElementById("matched-phone").textContent = formatUsPhone(result.matched_phone_number);
+        document.getElementById("message-match").href = `sms:${result.matched_phone_number}`;
+        loading.classList.add("is-hidden");
+        success.classList.remove("is-hidden");
+      }
+
+      openMatch().catch((error) => {
+        loading.classList.add("is-hidden");
+        errorPanel.classList.remove("is-hidden");
+        errorMessage.textContent = error.message;
+      });
+    </script>
+  </body>
+</html>
