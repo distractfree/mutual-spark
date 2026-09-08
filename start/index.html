@@ -50,7 +50,7 @@
             <a class="button button--primary start-button" id="start-sms" href="#">Open Messages</a>
             <div class="sms-fallback" aria-labelledby="sms-fallback-title">
               <strong id="sms-fallback-title">If Messages does not open</strong>
-              <p>Open your messaging app and text <strong id="fallback-code">CR</strong> to <strong>(218) 419-4609</strong>.</p>
+              <p>Open your messaging app and text <strong id="fallback-code">CR</strong> to <strong>(470) 347-8921</strong>.</p>
               <div class="sms-fallback__actions">
                 <button class="button button--ghost button--small" type="button" id="copy-sms-number">Copy number</button>
                 <button class="button button--ghost button--small" type="button" id="copy-sms-code">Copy code</button>
@@ -78,7 +78,7 @@
       const note = document.getElementById("registration-note");
       const startButton = document.getElementById("start-sms");
       let submittedPhone = "";
-      startButton.href = `sms:+12184194609?&body=${encodeURIComponent(campaignCode)}`;
+      startButton.href = `sms:+14703478921?&body=${encodeURIComponent(campaignCode)}`;
       document.getElementById("fallback-code").textContent = campaignCode;
 
       async function copyFallback(value, label) {
@@ -91,7 +91,7 @@
         }
       }
 
-      document.getElementById("copy-sms-number").addEventListener("click", () => copyFallback("+12184194609", "Number"));
+      document.getElementById("copy-sms-number").addEventListener("click", () => copyFallback("+14703478921", "Number"));
       document.getElementById("copy-sms-code").addEventListener("click", () => copyFallback(campaignCode, "Code"));
 
       registrationForm.addEventListener("submit", async (event) => {
