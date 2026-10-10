@@ -130,6 +130,7 @@ img { max-width: 100%; display: block; }
   font-weight: 700;
 }
 .field-grid input,
+.field-grid select,
 .single-field input {
   width: 100%;
   border: 1px solid var(--line);
@@ -138,6 +139,41 @@ img { max-width: 100%; display: block; }
   font: inherit;
   background: white;
 }
+.field-grid select { appearance: auto; }
+.form-heading {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 2rem;
+  margin: 0 0 20px;
+}
+.request-result {
+  margin-top: 28px;
+  padding: 24px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(217, 31, 88, 0.2);
+  background: var(--surface-soft);
+}
+.request-result h2 { margin-top: 0; }
+.request-summary { font-weight: 700; }
+.request-result .button { margin: 6px 8px 6px 0; }
+.sms-option {
+  margin-top: 28px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: white;
+}
+.sms-option p { color: var(--muted); line-height: 1.55; }
+.how-grid, .qr-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin: 28px 0; }
+.how-grid article, .qr-grid article { border: 1px solid var(--line); background: var(--surface-soft); border-radius: var(--radius-md); padding: 20px; }
+.how-grid article > strong { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--primary-dark); color: white; }
+.how-grid h2, .qr-grid h2 { margin-bottom: 8px; }
+.how-grid p { color: var(--muted); line-height: 1.55; }
+.qr-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.qr-image { width: 100%; aspect-ratio: 1; background: white; padding: 10px; border-radius: 10px; display: grid; place-items: center; }
+.qr-image img, .qr-image canvas { width: 100% !important; height: auto !important; }
+.qr-grid a { color: var(--primary-dark); text-decoration: underline; }
+.qr-download { width: 100%; margin-top: 12px; }
+@media (max-width: 760px) { .how-grid, .qr-grid { grid-template-columns: 1fr; } }
 .single-field { max-width: 360px; margin-bottom: 18px; }
 .registration-form .button + .button { margin-left: 10px; }
 .is-hidden { display: none !important; }
