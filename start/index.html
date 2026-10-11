@@ -19,7 +19,7 @@
       <main class="legal-shell start-shell">
         <section class="start-card">
           <span class="eyebrow">Private Connection Requests</span>
-          <h1>Say what you want—without fear of rejection.</h1>
+          <h1>Express what you want -- without fear of rejection.</h1>
           <p class="start-lede">Verify your mobile number, choose a Connection Request, and enter the other person’s number. Your request stays private unless that person independently creates the same type of request for you.</p>
           <div class="start-steps" aria-label="How Mutual Spark works">
             <div><strong>1</strong><span>Register and verify your phone.</span></div>
@@ -28,13 +28,14 @@
           </div>
           <form id="registration-form" class="registration-form">
             <h2 class="form-heading">Create or verify your account</h2>
-            <div class="field-grid">
-              <label><span>First name</span><input id="first-name" autocomplete="given-name" maxlength="50" required /></label>
-              <label><span>Last name</span><input id="last-name" autocomplete="family-name" maxlength="50" required /></label>
-              <label><span>Email</span><input id="registration-email" type="email" autocomplete="email" required /></label>
+            <label class="account-mode"><input type="checkbox" id="registered-user" /><span>Registered user?</span></label>
+            <div class="field-grid" id="registration-fields">
+              <label class="new-user-field"><span>First name</span><input id="first-name" autocomplete="given-name" maxlength="50" required /></label>
+              <label class="new-user-field"><span>Last name</span><input id="last-name" autocomplete="family-name" maxlength="50" required /></label>
+              <label class="new-user-field"><span>Email</span><input id="registration-email" type="email" autocomplete="email" required /></label>
               <label><span>Mobile number</span><input id="phone-number" type="tel" autocomplete="tel" placeholder="(404) 555-1212" required /></label>
             </div>
-            <div class="consent-box">
+            <div class="consent-box" id="new-user-consents">
               <label class="consent-label"><input type="checkbox" id="age-attested" required /><span>I confirm that I am at least 18 years old.</span></label>
               <label class="consent-label"><input type="checkbox" id="sms-consent" required /><span>I agree to receive transactional texts from Mutual Spark about my Connection Requests and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out or HELP for help. Consent is not a condition of purchase.</span></label>
               <label class="consent-label"><input type="checkbox" id="email-updates" /><span>Optional: send me Mutual Spark product updates by email.</span></label>
@@ -45,6 +46,7 @@
             <h2 class="form-heading">Verify your mobile number</h2>
             <label class="single-field"><span>Verification code</span><input id="otp-code" inputmode="numeric" autocomplete="one-time-code" required /></label>
             <button class="button button--primary" type="submit">Verify and continue</button>
+            <p class="form-feedback" id="otp-note" aria-live="polite"></p>
             <button class="button button--ghost" type="button" id="edit-registration">Change my information</button>
           </form>
           <form id="request-form" class="registration-form is-hidden">
@@ -78,17 +80,40 @@
       const API_BASE = "https://sms-staging.mutualsparks.com";
       const SESSION_KEY = "mutual_spark_request_session";
       const registrationForm = document.getElementById("registration-form");
+      const registeredUser = document.getElementById("registered-user");
+      const registrationFields = document.getElementById("registration-fields");
+      const newUserFields = [...document.querySelectorAll(".new-user-field")];
+      const newUserConsents = document.getElementById("new-user-consents");
       const otpForm = document.getElementById("otp-form");
+      const otpNote = document.getElementById("otp-note");
       const requestForm = document.getElementById("request-form");
       const completePanel = document.getElementById("request-complete");
       const note = document.getElementById("registration-note");
       let submittedPhone = "";
+      let existingUserMode = false;
       let pollTimer = null;
       document.getElementById("start-sms").href = `sms:+14703478921?&body=${encodeURIComponent(starterText)}`;
       document.getElementById("fallback-code").textContent = starterText;
       function requestSessionToken() { return sessionStorage.getItem(SESSION_KEY) || ""; }
       function showOnly(panel) { [registrationForm, otpForm, requestForm, completePanel].forEach((item) => item.classList.toggle("is-hidden", item !== panel)); }
-      function lastFour(value) { return String(value || "").replace(/\D/g, "").slice(-4); }
+      function formatPhone(value) {
+        const digits = String(value || "").replace(/\D/g, "");
+        const local = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+        if (local.length === 10) return `(${local.slice(0, 3)}) ${local.slice(3, 6)}-${local.slice(6)}`;
+        return String(value || "").trim();
+      }
+      function setExistingUserMode() {
+        existingUserMode = registeredUser.checked;
+        newUserFields.forEach((field) => field.classList.toggle("is-hidden", existingUserMode));
+        newUserConsents.classList.toggle("is-hidden", existingUserMode);
+        registrationFields.classList.toggle("field-grid--single", existingUserMode);
+        ["first-name", "last-name", "registration-email", "age-attested", "sms-consent"].forEach((id) => {
+          document.getElementById(id).required = !existingUserMode;
+        });
+        note.textContent = existingUserMode
+          ? "Enter the mobile number already associated with your verified Mutual Spark account."
+          : "We send one verification code to confirm your number. We do not message an unregistered target.";
+      }
       async function apiRequest(path, options = {}) {
         const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
         if (requestSessionToken()) headers.Authorization = `Bearer ${requestSessionToken()}`;
@@ -99,19 +124,24 @@
       }
       registrationForm.addEventListener("submit", async (event) => {
         event.preventDefault(); const button = registrationForm.querySelector("button[type='submit']"); submittedPhone = document.getElementById("phone-number").value; note.textContent = "Sending your verification code…"; button.disabled = true;
-        try { await apiRequest("/public/registration/start", { method: "POST", body: JSON.stringify({ first_name: document.getElementById("first-name").value, last_name: document.getElementById("last-name").value, email: document.getElementById("registration-email").value, phone_number: submittedPhone, campaign_code: campaignCode, age_attested: document.getElementById("age-attested").checked, sms_consent: document.getElementById("sms-consent").checked, email_updates_opt_in: document.getElementById("email-updates").checked, source_url: window.location.href }) }); showOnly(otpForm); document.getElementById("otp-code").focus(); note.textContent = "Enter the verification code sent to your mobile number."; }
+        const path = existingUserMode ? "/public/registration/existing/start" : "/public/registration/start";
+        const payload = existingUserMode
+          ? { phone_number: submittedPhone, campaign_code: campaignCode }
+          : { first_name: document.getElementById("first-name").value, last_name: document.getElementById("last-name").value, email: document.getElementById("registration-email").value, phone_number: submittedPhone, campaign_code: campaignCode, age_attested: document.getElementById("age-attested").checked, sms_consent: document.getElementById("sms-consent").checked, email_updates_opt_in: document.getElementById("email-updates").checked, source_url: window.location.href };
+        try { await apiRequest(path, { method: "POST", body: JSON.stringify(payload) }); showOnly(otpForm); document.getElementById("otp-code").focus(); otpNote.textContent = "Enter the verification code sent to your mobile number."; note.textContent = ""; }
         catch (error) { note.textContent = error.message; } finally { button.disabled = false; }
       });
       otpForm.addEventListener("submit", async (event) => {
-        event.preventDefault(); const button = otpForm.querySelector("button[type='submit']"); note.textContent = "Verifying your phone…"; button.disabled = true;
-        try { const result = await apiRequest("/public/registration/verify", { method: "POST", body: JSON.stringify({ phone_number: submittedPhone, otp: document.getElementById("otp-code").value }) }); sessionStorage.setItem(SESSION_KEY, result.request_session_token); showOnly(requestForm); note.textContent = result.message; }
-        catch (error) { note.textContent = error.message; } finally { button.disabled = false; }
+        event.preventDefault(); const button = otpForm.querySelector("button[type='submit']"); otpNote.textContent = "Verifying your phone…"; button.disabled = true;
+        const path = existingUserMode ? "/public/registration/existing/verify" : "/public/registration/verify";
+        try { const result = await apiRequest(path, { method: "POST", body: JSON.stringify({ phone_number: submittedPhone, otp: document.getElementById("otp-code").value, campaign_code: campaignCode }) }); sessionStorage.setItem(SESSION_KEY, result.request_session_token); showOnly(requestForm); note.textContent = result.message; otpNote.textContent = ""; }
+        catch (error) { otpNote.textContent = error.message; } finally { button.disabled = false; }
       });
       requestForm.addEventListener("submit", async (event) => {
         event.preventDefault(); const targetPhone = document.getElementById("target-phone").value; const select = document.getElementById("request-type"); const typeName = select.options[select.selectedIndex].text;
-        if (!window.confirm(`Send a private ${typeName} request for the phone ending ${lastFour(targetPhone)}?`)) return;
+        if (!window.confirm(`Send a private ${typeName} request for ${formatPhone(targetPhone)}?`)) return;
         const button = requestForm.querySelector("button[type='submit']"); button.disabled = true; note.textContent = "Recording your private Connection Request…";
-        try { const result = await apiRequest("/public/connection-requests", { method: "POST", body: JSON.stringify({ cr_type_id: Number(select.value), target_phone_number: targetPhone }) }); if (result.match_url) return window.location.assign(result.match_url); document.getElementById("request-summary").textContent = `${typeName} · phone ending ${lastFour(targetPhone)}`; showOnly(completePanel); note.textContent = "Request recorded."; beginPolling(); }
+        try { const result = await apiRequest("/public/connection-requests", { method: "POST", body: JSON.stringify({ cr_type_id: Number(select.value), target_phone_number: targetPhone }) }); if (result.match_url) return window.location.assign(result.match_url); document.getElementById("request-summary").textContent = `${typeName} · ${formatPhone(targetPhone)}`; showOnly(completePanel); note.textContent = "Request recorded."; beginPolling(); }
         catch (error) { note.textContent = error.message; } finally { button.disabled = false; }
       });
       async function checkStatus() {
@@ -122,7 +152,9 @@
       function beginPolling() { clearInterval(pollTimer); pollTimer = setInterval(checkStatus, 15000); }
       document.getElementById("check-status").addEventListener("click", checkStatus);
       document.getElementById("create-another").addEventListener("click", () => { clearInterval(pollTimer); requestForm.reset(); showOnly(requestForm); });
-      document.getElementById("edit-registration").addEventListener("click", () => { showOnly(registrationForm); note.textContent = "Update your information and request a new code."; });
+      registeredUser.addEventListener("change", setExistingUserMode);
+      document.getElementById("edit-registration").addEventListener("click", () => { showOnly(registrationForm); otpNote.textContent = ""; setExistingUserMode(); });
+      setExistingUserMode();
     </script>
   </body>
 </html>
